@@ -1,3 +1,4 @@
+[![Release X-ui](https://github.com/Mazafard/x-ui/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/Mazafard/x-ui/actions/workflows/release.yml)
 # X-UI
 简体中文|[ENGLISH](./README_EN.md)  
 
