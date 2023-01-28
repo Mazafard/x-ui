@@ -41,11 +41,11 @@ for more detailed usages,plz see [WIKI](https://github.com/mazafard/x-ui/wiki)
 Make sure your system `bash` and `curl` and `network` are ready,here we go
 
 ```
-bash <(curl -Ls https://raw.githubusercontent.com/mazafard/x-ui/master/install.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/mazafard/x-ui/main/install.sh)
 ```  
 For English Users,please use the following command to install English supported version:  
 ```
-bash <(curl -Ls https://raw.githubusercontent.com/mazafard/x-ui/master/install_en.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/mazafard/x-ui/main/install_en.sh)
 ``` 
 
 ## shortcut  
