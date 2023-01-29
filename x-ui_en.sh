@@ -35,6 +35,8 @@ elif cat /proc/version | grep -Eqi "ubuntu"; then
     release="ubuntu"
 elif cat /proc/version | grep -Eqi "centos|red hat|redhat"; then
     release="centos"
+elif uname | grep "Darwin"; then
+    release="Darwin"
 else
     LOGE "check system os failed,please contact with author!\n" && exit 1
 fi
@@ -634,6 +636,7 @@ show_usage() {
     echo -e "x-ui update       - Update x-ui "
     echo -e "x-ui install      - Install x-ui "
     echo -e "x-ui uninstall    - Uninstall x-ui "
+    echo -e "x-ui traefik      - Install traefik "
     echo "------------------------------------------"
 }
 
@@ -662,6 +665,8 @@ show_menu() {
 ————————————————
   ${green}15.${plain} enable bbr 
   ${green}16.${plain} issuse certs
+————————————————
+  ${green}17.${plain} enable traefik
  "
     show_status
     echo && read -p "please input a legal number[0-16]: " num
@@ -718,6 +723,9 @@ show_menu() {
     16)
         ssl_cert_issue
         ;;
+    17)
+        enable_traefik
+        ;;
     *)
         LOGE "please input a legal number[0-16]"
         ;;
@@ -758,6 +766,9 @@ if [[ $# > 0 ]]; then
         ;;
     "uninstall")
         check_install 0 && uninstall 0
+        ;;
+    "traefik")
+        check_install 0 && traefik 0
         ;;
     *) show_usage ;;
     esac
