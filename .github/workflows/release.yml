@@ -1,8 +1,7 @@
 name: Release X-ui
 on:
   push:
-    tags:
-      - "*"
+    branches: [ master ]
   workflow_dispatch:
 jobs:
   release:
