@@ -23,7 +23,7 @@ If you need more language options ,please open a issue and let me know that
 Make sure your system `bash` and `curl` and `network` are ready,here we go
 
 ```
-bash <(curl -Ls https://raw.githubusercontent.com/mazafard/x-ui/master/install_en.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/mazafard/x-ui/master/install.sh)
 ```  
 
 
