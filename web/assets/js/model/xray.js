@@ -603,117 +603,32 @@ class Sniffing extends XrayCommonClass {
 class Client extends XrayCommonClass {
     constructor(
         enable = false,
-        alter_ids = "",
+        alterId = "",
         email = "",
-        limit_ip = 1,
+        limitIp = 0,
         security = "",
-        creator = "",
-        z
+        inbound = {},
+        expiryTime = 0,
+        id = "",
+        totalGB = 0,
+
     ) {
         super();
         this.enable = enable;
-        this.alter_ids = alter_ids;
         this.email = email;
-        this.limit_ip = limit_ip;
+        this.limitIp = limitIp;
         this.security = security;
-        this.creator = creator;
+        this.inbound= inbound;
+        this.expiryTime= expiryTime;
+        this.id= id;
+        this.totalGB= totalGB;
     }
 
-    getClientStats() {
-        return this.clientStats;
+    getInbound() {
+        return this.inbound;
     }
 
-    get protocol() {
-        return this._protocol;
-    }
 
-    set protocol(protocol) {
-        this._protocol = protocol;
-        this.settings = Inbound.Settings.getSettings(protocol);
-        if (protocol === Protocols.TROJAN) {
-            this.tls = true;
-        }
-    }
-
-    get tls() {
-        return this.stream.security === 'tls';
-    }
-
-    set tls(isTls) {
-        if (isTls) {
-            this.stream.security = 'tls';
-        } else {
-            this.stream.security = 'none';
-        }
-    }
-
-    get xtls() {
-        return this.stream.security === 'xtls';
-    }
-
-    set xtls(isXTls) {
-        if (isXTls) {
-            this.stream.security = 'xtls';
-        } else {
-            this.stream.security = 'none';
-        }
-    }
-
-    get network() {
-        return this.stream.network;
-    }
-
-    set network(network) {
-        this.stream.network = network;
-    }
-
-    get isTcp() {
-        return this.network === "tcp";
-    }
-
-    get isWs() {
-        return this.network === "ws";
-    }
-
-    get isKcp() {
-        return this.network === "kcp";
-    }
-
-    get isQuic() {
-        return this.network === "quic"
-    }
-
-    get isGrpc() {
-        return this.network === "grpc";
-    }
-
-    get isH2() {
-        return this.network === "http";
-    }
-
-    // VMess & VLess
-    get uuid() {
-        switch (this.protocol) {
-            case Protocols.VMESS:
-                return this.settings.vmesses[0].id;
-            case Protocols.VLESS:
-                return this.settings.vlesses[0].id;
-            default:
-                return "";
-        }
-    }
-
-    // VLess & Trojan
-    get flow() {
-        switch (this.protocol) {
-            case Protocols.VLESS:
-                return this.settings.vlesses[0].flow;
-            case Protocols.TROJAN:
-                return this.settings.clients[0].flow;
-            default:
-                return "";
-        }
-    }
 
     // VMess
     get alterId() {
@@ -1073,15 +988,16 @@ class Client extends XrayCommonClass {
     }
 
     static fromJson(json = {}) {
-        return new Inbound(
-            json.port,
-            json.listen,
-            json.protocol,
-            Inbound.Settings.fromJson(json.protocol, json.settings),
-            StreamSettings.fromJson(json.streamSettings),
-            json.tag,
-            Sniffing.fromJson(json.sniffing),
-            json.clientStats
+        return new Client(
+            json.enable,
+            json.alterId,
+            json.email,
+            json.limitIp,
+            json.security,
+            json.inbound,
+            json.expiryTime,
+            json.id,
+            json.totalGB,
         )
     }
 

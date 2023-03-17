@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/satori/go.uuid"
+	"gorm.io/gorm"
 	"x-ui/util/json_util"
 )
 
@@ -110,7 +111,7 @@ type Setting struct {
 	Value string `json:"value" form:"value"`
 }
 type Client struct {
-	ID         uuid.UUID  `gorm:"type:uuid;default:uuid_generate_v5" json:"id" gorm:"primaryKey"`
+	ID         uuid.UUID  `gorm:"type:uuid" json:"id" gorm:"primaryKey"`
 	Creator    int        `json:"-"`
 	AlterIds   uint16     `json:"alterId"`
 	Enable     bool       `json:"enable" form:"enable"`
@@ -132,4 +133,10 @@ type InboundClientIps struct {
 	Id          int    `json:"id" gorm:"primaryKey;autoIncrement"`
 	ClientEmail string `json:"clientEmail" form:"clientEmail" gorm:"unique"`
 	Ips         string `json:"ips" form:"ips"`
+}
+
+func (c *Client) BeforeCreate(tx *gorm.DB) (err error) {
+	c.ID = uuid.NewV4()
+
+	return
 }

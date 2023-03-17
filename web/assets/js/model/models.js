@@ -160,23 +160,15 @@ class DBInbound {
 class DBClient {
 
     constructor(data) {
-        this.id = 0;
-        this.userId = 0;
-        this.up = 0;
-        this.down = 0;
-        this.total = 0;
-        this.remark = "";
+        this.inbound = [];
+        this.alterId = "";
+        this.email = "";
         this.enable = true;
         this.expiryTime = 0;
-
-        this.listen = "";
-        this.port = 0;
-        this.protocol = "";
-        this.settings = "";
-        this.streamSettings = "";
-        this.tag = "";
-        this.sniffing = "";
-        this.clientStats = ""
+        this.id = 0;
+        this.limitIp = 0;
+        this.security = "";
+        this.total =0;
         if (data == null) {
             return;
         }
@@ -189,38 +181,6 @@ class DBClient {
 
     set totalGB(gb) {
         this.total = toFixed(gb * ONE_GB, 0);
-    }
-
-    get isVMess() {
-        return this.protocol === Protocols.VMESS;
-    }
-
-    get isVLess() {
-        return this.protocol === Protocols.VLESS;
-    }
-
-    get isTrojan() {
-        return this.protocol === Protocols.TROJAN;
-    }
-
-    get isSS() {
-        return this.protocol === Protocols.SHADOWSOCKS;
-    }
-
-    get isSocks() {
-        return this.protocol === Protocols.SOCKS;
-    }
-
-    get isHTTP() {
-        return this.protocol === Protocols.HTTP;
-    }
-
-    get address() {
-        let address = location.hostname;
-        if (!ObjectUtil.isEmpty(this.listen) && this.listen !== "0.0.0.0") {
-            address = this.listen;
-        }
-        return address;
     }
 
     get _expiryTime() {
@@ -243,45 +203,28 @@ class DBClient {
     }
 
     toClient() {
-        let settings = {};
-        if (!ObjectUtil.isEmpty(this.settings)) {
-            settings = JSON.parse(this.settings);
-        }
+        // let inbounds = {};
+        // if (!ObjectUtil.isEmpty(this.inbound)) {
+        //     inbounds = JSON.parse(this.inbound);
+        // }
 
-        let streamSettings = {};
-        if (!ObjectUtil.isEmpty(this.streamSettings)) {
-            streamSettings = JSON.parse(this.streamSettings);
-        }
-
-        let sniffing = {};
-        if (!ObjectUtil.isEmpty(this.sniffing)) {
-            sniffing = JSON.parse(this.sniffing);
-        }
 
         const config = {
-            port: this.port,
-            listen: this.listen,
-            protocol: this.protocol,
-            settings: settings,
-            streamSettings: streamSettings,
-            tag: this.tag,
-            sniffing: sniffing,
-            clientStats: this.clientStats,
+            // Inbound: inbounds,
+            alterId: this.alterId,
+            email: this.email,
+            enable: this.enable,
+            expiryTime: this.expiryTime,
+            id: this.id,
+            limitIp: this.limitIp,
+            security: this.security,
+            totalGB: this.totalGB,
+
         };
         return Client.fromJson(config);
     }
 
-    hasLink() {
-        switch (this.protocol) {
-            case Protocols.VMESS:
-            case Protocols.VLESS:
-            case Protocols.TROJAN:
-            case Protocols.SHADOWSOCKS:
-                return true;
-            default:
-                return false;
-        }
-    }
+
 
     genLink() {
         const client = this.toClient();

@@ -46,11 +46,12 @@
                         <div slot="title">
                             <a-button type="primary" icon="plus" @click="openAddClient"></a-button>
                         </div>
-                        <!--                        <a-input v-model="searchKey" placeholder="搜索" autofocus style="max-width: 300px"></a-input>-->
+
+<!--                        <a-input v-model="searchKey" placeholder="search" autofocus style="max-width: 300px"></a-input>-->
                         <a-table :columns="columns" :row-key="dbClient => dbClient.id"
                                  :data-source="dbClients"
                                  :loading="spinning" :scroll="{ x: 1500 }"
-                                 :pagination="false"
+                                 :pagination="true"
                                  style="margin-top: 20px"
                                  @change="() => getDBClients()">
                             <template slot="action" slot-scope="text, dbClient">
@@ -76,34 +77,11 @@
                                     </a-menu>
                                 </a-dropdown>
                             </template>
-                            <template slot="email" slot-scope="text, dbClient">
-                                <a-tag color="blue">[[ dbClient.email ]]</a-tag>
-                            </template>
-                            <template slot="traffic" slot-scope="text, dbClient">
-                                <a-tag color="blue">[[ sizeFormat(dbClient.total_gb) ]] / [[ sizeFormat(dbClient.total_gb) ]]</a-tag>
-                                <template v-if="dbClient.total_gb > 0">
-                                    <a-tag v-if="dbClient.total_gb + dbClient.total_gb < dbClient.total_gb" color="cyan">[[ sizeFormat(dbClient.total_gb) ]]</a-tag>
-                                    <a-tag v-else color="red">[[ sizeFormat(dbClient.total_gb) ]]</a-tag>
-                                </template>
-                                <a-tag v-else color="green">{{ i18n "unlimited" }}</a-tag>
-                            </template>
-                            <template slot="settings" slot-scope="text, dbClient">
-                                <a-button type="link" @click="showInfo(dbClient)">{{ i18n "check" }}</a-button>
-                            </template>
-                            <template slot="stream" slot-scope="text, dbClient, index">
-                                <template v-if="dbClient.isVMess || dbClient.isVLess || dbClient.isTrojan || dbClient.isSS">
-                                    <a-tag color="green">[[ clients[index].stream.network ]]</a-tag>
-                                    <a-tag v-if="clients[index].stream.isTls" color="blue">tls</a-tag>
-                                    <a-tag v-if="clients[index].stream.isXTls" color="blue">xtls</a-tag>
-                                </template>
-                                <template v-else>{{ i18n "none" }}</template>
-                            </template>
+
                             <template slot="enable" slot-scope="text, dbClient">
                                 <a-switch v-model="dbClient.enable" @change="switchEnable(dbClient)"></a-switch>
                             </template>
-                            <template slot="outbound" slot-scope="text, dbClient">
-                                <a-switch v-model="dbClient.enable" @change="switchEnable(dbClient)"></a-switch>
-                            </template>
+
                             <template slot="expiryTime" slot-scope="text, dbClient">
                                 <template v-if="dbClient.expiryTime > 0">
                                     <a-tag v-if="dbClient.isExpiry" color="red">
@@ -125,12 +103,7 @@
 {{template "js" .}}
 <script>
 
-    const columns = [{
-        title: '{{ i18n "pages.clients.operate" }}',
-        align: 'center',
-        width: 30,
-        scopedSlots: { customRender: 'action' },
-    }, {
+    const columns = [ {
         title: '{{ i18n "pages.clients.enable" }}',
         align: 'center',
         width: 40,
@@ -139,18 +112,17 @@
         title: "Id",
         align: 'center',
         dataIndex: "id",
-        width: 30,
+        width: 70,
     }, {
         title: '{{ i18n "pages.clients.email" }}',
         align: 'center',
         width: 100,
-        // scopedSlots: { customRender: 'email' },
         dataIndex: "email",
     }, {
         title: '{{ i18n "pages.clients.limitIP" }}',
         align: 'center',
         width: 60,
-        dataIndex: "limit_ip",
+        dataIndex: "limitIp",
     }, {
         title: '{{ i18n "pages.clients.security" }}',
         align: 'center',
@@ -160,12 +132,13 @@
         title: '{{ i18n "pages.clients.traffic" }}↑|↓',
         align: 'center',
         width: 150,
-        scopedSlots: { customRender: 'total_gb' },
+        dataIndex: 'totalGB',
+        // scopedSlots: { customRender: 'total_gb' },
     }, {
         title: '{{ i18n "pages.clients.expireDate" }}',
         align: 'center',
         width: 80,
-        scopedSlots: { customRender: 'expiry_Time' },
+        scopedSlots: { customRender: 'expiryTime' },
     }];
 
     const app = new Vue({
@@ -194,10 +167,13 @@
             setClients(dbClients) {
                 this.clients.splice(0);
                 this.dbClients.splice(0);
+                console.log("+++++++++++++++++")
+                console.log(dbClients)
                 for (const client of dbClients) {
                     const dbClient = new DBClient(client);
                     this.clients.push(dbClient.toClient());
                     this.dbClients.push(dbClient);
+                    console.log(this.clients)
                 }
             },
             searchClients(key) {
