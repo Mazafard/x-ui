@@ -40,7 +40,7 @@ else
     echo -e "${red}fail to check system arch,will use default arch here: ${arch}${plain}"
 fi
 
-echo "架构: ${arch}"
+echo "Architecture: ${arch}"
 
 if [ $(getconf WORD_BIT) != '32' ] && [ $(getconf LONG_BIT) != '64' ]; then
     echo "x-ui dosen't support 32bit(x86) system,please use 64 bit operating system(x86_64) instead,if there is something wrong,plz let me know"
