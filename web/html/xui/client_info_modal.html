@@ -1,0 +1,61 @@
+{{define "clientInfoModal"}}
+{{template "component/clientInfo"}}
+<a-modal id="client-info-modal" v-model="infoModal.visible" title='{{ i18n "pages.clients.details"}}' @ok="infoModal.ok"
+         :closable="true" :mask-closable="true"
+         ok-text='{{ i18n "pages.clients.copyLink"}}' cancel-text='{{ i18n "close" }}' :ok-button-props="infoModal.okBtnPros">
+    <client-info :db-client="dbClient" :client="client"></client-info>
+</a-modal>
+<script>
+
+    const infoModal = {
+        visible: false,
+        client: new Client(),
+        dbClient: new dbClient(),
+        clipboard: null,
+        okBtnPros: {
+            attrs: {
+                id: "client-info-modal-ok-btn",
+                style: "",
+            },
+        },
+        show(dbClient) {
+            this.client = dbClient.toClient();
+            this.dbClient = new DBClient(dbClient);
+            this.visible = true;
+
+            if (dbClient.hasLink()) {
+                this.okBtnPros.attrs.style = "";
+            } else {
+                this.okBtnPros.attrs.style = "display: none";
+            }
+
+            if (this.clipboard == null) {
+                infoModalApp.$nextTick(() => {
+                    this.clipboard = new ClipboardJS(`#${this.okBtnPros.attrs.id}`, {
+                        text: () => this.dbClient.genLink(),
+                    });
+                    this.clipboard.on('success', () => app.$message.success('{{ i18n "copySuccess" }}'));
+                });
+            }
+        },
+        close() {
+            infoModal.visible = false;
+        },
+    };
+
+    const infoModalApp = new Vue({
+        delimiters: ['[[', ']]'],
+        el: '#client-info-modal',
+        data: {
+            infoModal,
+            get dbClient() {
+                return this.infoModal.dbClient;
+            },
+            get client() {
+                return this.infoModal.client;
+            }
+        },
+    });
+
+</script>
+{{end}}

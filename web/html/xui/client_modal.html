@@ -1,0 +1,197 @@
+{{define "clientModal"}}
+<a-modal id="client-modal" v-model="clModal.visible" :title="clModal.title" @ok="clModal.ok"
+         :confirm-loading="clModal.confirmLoading" :closable="true" :mask-closable="false"
+         :ok-text="clModal.okText" cancel-text='{{ i18n "close" }}'>
+    {{template "form/client"}}
+</a-modal>
+<script>
+
+    const clModal = {
+        title: '',
+        visible: false,
+        confirmLoading: false,
+        okText: '{{ i18n "sure" }}',
+        isEdit: false,
+        confirm: null,
+        client: new Client(),
+        dbClient: new DBClient(),
+        ok() {
+            ObjectUtil.execute(clModal.confirm, clModal.client, clModal.dbClient);
+        },
+        show({ title='', okText='{{ i18n "sure" }}', client=null, dbClient=null, confirm=(client, dbClient)=>{}, isEdit=false  }) {
+            this.title = title;
+            this.okText = okText;
+            if (client) {
+                this.client = Client.fromJson(client.toJson());
+            } else {
+                this.client = new Client();
+            }
+            if (dbClient) {
+                this.dbClient = new DBClient(dbClient);
+            } else {
+                this.dbClient = new DBClient();
+            }
+            this.confirm = confirm;
+            this.visible = true;
+            this.isEdit = isEdit;
+        },
+        close() {
+            clModal.visible = false;
+            clModal.loading(false);
+        },
+        loading(loading) {
+            clModal.confirmLoading = loading;
+        },
+    };
+
+    const protocols = {
+        VMESS: Protocols.VMESS,
+        VLESS: Protocols.VLESS,
+        TROJAN: Protocols.TROJAN,
+        SHADOWSOCKS: Protocols.SHADOWSOCKS,
+        DOKODEMO: Protocols.DOKODEMO,
+        SOCKS: Protocols.SOCKS,
+        HTTP: Protocols.HTTP,
+    };
+
+    new Vue({
+        delimiters: ['[[', ']]'],
+        el: '#client-modal',
+        data: {
+            clModal: clModal,
+            Protocols: protocols,
+            SSMethods: SSMethods,
+            get client() {
+                return clModal.client;
+            },
+            get dbClient() {
+                return clModal.dbClient;
+            },
+            get isEdit() {
+                return clModal.isEdit;
+            }
+        },
+        methods: {
+            streamNetworkChange(oldValue) {
+                if (oldValue === 'kcp') {
+                    this.clModal.client.tls = false;
+                }
+            },
+            addClient(protocol,value, clients) {
+                switch (protocol) {
+                    case Protocols.VMESS: return clients.push(new Client.VmessSettings.Vmess());
+                    case Protocols.VLESS: return clients.push(new Client.VLESSSettings.VLESS());
+                    default: return null;
+                }
+            },
+            removeClient(index, clients) {
+                clients.splice(index, 1);
+            },
+
+            async getDBClientIps(email,event) {
+
+                const msg = await HttpUtil.post('/xui/client/clientIps/'+ email);
+                if (!msg.success) {
+                    return;
+                }
+                try {
+                    ips = JSON.parse(msg.obj)
+                    ips = ips.join(",")
+                    event.target.value = ips
+                } catch (error) {
+                    // text
+                    event.target.value = msg.obj
+
+                }
+
+            },
+            async clearDBClientIps(email,event) {
+                const msg = await HttpUtil.post('/xui/client/clearClientIps/'+ email);
+                if (!msg.success) {
+                    return;
+                }
+                event.target.value = ""
+            },
+            async resetClientTraffic(client,event) {
+                const msg = await HttpUtil.post('/xui/client/resetClientTraffic/'+ client.email);
+                if (!msg.success) {
+                    return;
+                }
+                clientStats = this.client.clientStats
+                if(clientStats.length > 0)
+                {
+                    for (const key in clientStats) {
+                        if (Object.hasOwnProperty.call(clientStats, key)) {
+                            if(clientStats[key]['email'] == client.email){
+                                clientStats[key]['up'] = 0
+                                clientStats[key]['down'] = 0
+                            }
+                        }
+                    }
+                }
+            },
+            isExpiry(index) {
+                return this.client.isExpiry(index)
+            },
+            getUpStats(email) {
+                clientStats = this.client.clientStats
+                if(clientStats.length > 0)
+                {
+                    for (const key in clientStats) {
+                        if (Object.hasOwnProperty.call(clientStats, key)) {
+                            if(clientStats[key]['email'] == email)
+                                return clientStats[key]['up']
+
+                        }
+                    }
+                }
+
+            },
+            getDownStats(email) {
+                clientStats = this.client.clientStats
+                if(clientStats.length > 0)
+                {
+                    for (const key in clientStats) {
+                        if (Object.hasOwnProperty.call(clientStats, key)) {
+                            if(clientStats[key]['email'] == email)
+                                return clientStats[key]['down']
+
+                        }
+                    }
+                }
+            },
+            isClientEnable(email) {
+                clientStats = this.client.clientStats
+                if(clientStats.length > 0)
+                {
+                    for (const key in clientStats) {
+                        if (Object.hasOwnProperty.call(clientStats, key)) {
+                            if(clientStats[key]['email'] == email)
+                                return clientStats[key]['enable']
+
+                        }
+                    }
+                }
+            },
+
+            getHeaderText(email) {
+                if(email == "")
+                    return "Add Client"
+
+                return email + (this.isClientEnable(email) == true ? ' Active' : ' Deactive')
+            },
+
+            getNewEmail(client) {
+                var chars = 'abcdefghijklmnopqrstuvwxyz1234567890';
+                var string = '';
+                var len = 6 + Math.floor(Math.random() * 5)
+                for(var ii=0; ii<len; ii++){
+                    string += chars[Math.floor(Math.random() * chars.length)];
+                }
+                client.email = string + "@gmail.com"
+            }
+        },
+    });
+
+</script>
+{{end}}
