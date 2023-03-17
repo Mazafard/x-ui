@@ -82,7 +82,7 @@ install_base() {
 #This function will be called when user installed x-ui out of sercurity
 config_after_install() {
     echo -e "${yellow}Install/update finished need to modify panel settings out of security${plain}"
-    read -p "are you continue,if you type n will skip this at this time[y/n]": config_confirm
+    read -p "Do you continue,if you type n will skip this at this time[y/n]": config_confirm
     if [[ x"${config_confirm}" == x"y" || x"${config_confirm}" == x"Y" ]]; then
         read -p "please set up your username:" config_account
         echo -e "${yellow}your username will be:${config_account}${plain}"
@@ -152,7 +152,7 @@ install_x-ui() {
     cd x-ui
     chmod +x x-ui bin/xray-linux-${arch}
     cp -f x-ui.service /etc/systemd/system/
-    wget --no-check-certificate -O /usr/bin/x-ui https://raw.githubusercontent.com/mazafard/x-ui/main/x-ui.sh
+    wget --no-check-certificate -O /usr/bin/x-ui https://raw.githubusercontent.com/mazafard/x-ui/master/x-ui.sh
     chmod +x /usr/local/x-ui/x-ui.sh
     chmod +x /usr/bin/x-ui
     config_after_install
