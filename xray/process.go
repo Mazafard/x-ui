@@ -30,23 +30,19 @@ func GetBinaryName() string {
 }
 
 func GetBinaryPath() string {
-	//return "bin/" + GetBinaryName()
-	return "/Users/maza/Projects/creativebug/x-ui-sqd/bin/" + GetBinaryName()
+	return "bin/" + GetBinaryName()
 }
 
 func GetConfigPath() string {
-	//return "bin/config.json"
-	return "/Users/maza/Projects/creativebug/x-ui-sqd/bin/config.json"
+	return "bin/config.json"
 }
 
 func GetGeositePath() string {
-	//return "bin/geosite.dat"
-	return "/Users/maza/Projects/creativebug/x-ui-sqd/bin/geosite.dat"
+	return "bin/geosite.dat"
 }
 
 func GetGeoipPath() string {
-	//return "bin/geoip.dat"
-	return "/Users/maza/Projects/creativebug/x-ui-sqd/bin/geoip.dat"
+	return "bin/geoip.dat"
 }
 
 func stopProcess(p *Process) {
