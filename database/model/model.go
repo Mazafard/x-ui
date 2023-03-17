@@ -3,7 +3,7 @@ package model
 import (
 	"bytes"
 	"fmt"
-	"github.com/xtls/xray-core/common/uuid"
+	"github.com/satori/go.uuid"
 	"x-ui/util/json_util"
 )
 
@@ -110,7 +110,7 @@ type Setting struct {
 	Value string `json:"value" form:"value"`
 }
 type Client struct {
-	ID         uuid.UUID  `gorm:"type:uuid;default:uuid_generate_v4" json:"id" gorm:"primaryKey"`
+	ID         uuid.UUID  `gorm:"type:uuid;default:uuid_generate_v5" json:"id" gorm:"primaryKey"`
 	Creator    int        `json:"-"`
 	AlterIds   uint16     `json:"alterId"`
 	Enable     bool       `json:"enable" form:"enable"`
