@@ -32,9 +32,7 @@ func initUser() error {
 	}
 	return nil
 }
-func initClientTraffic() error {
-	return db.AutoMigrate(&model.ClientTraffic{})
-}
+
 func initInbound() error {
 	return db.AutoMigrate(&model.Inbound{})
 }
@@ -48,6 +46,14 @@ func initInboundClientIps() error {
 
 func initClient() error {
 	return db.AutoMigrate(&model.Client{})
+}
+
+func initInboundClients() error {
+	return db.AutoMigrate(&model.InboundClients{})
+}
+
+func initTraffic() error {
+	return db.AutoMigrate(&model.Traffic{})
 }
 
 func InitDB(dbPath string) error {
@@ -74,13 +80,10 @@ func InitDB(dbPath string) error {
 	}
 
 	err = initUser()
-	err = initClientTraffic()
 	if err != nil {
 		return err
 	}
-	if err != nil {
-		return err
-	}
+
 	err = initInbound()
 	if err != nil {
 		return err
@@ -93,7 +96,19 @@ func InitDB(dbPath string) error {
 	if err != nil {
 		return err
 	}
+	err = initInboundClients()
+	if err != nil {
+		return err
+	}
+	err = initTraffic()
+	if err != nil {
+		return err
+	}
 	err = initInboundClientIps()
+	if err != nil {
+		return err
+	}
+	err = db.SetupJoinTable(&model.Client{}, "Inbounds", &model.InboundClients{})
 	if err != nil {
 		return err
 	}

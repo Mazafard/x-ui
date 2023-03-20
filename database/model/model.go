@@ -2,9 +2,9 @@ package model
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
-	"github.com/satori/go.uuid"
-	"gorm.io/gorm"
+	"time"
 	"x-ui/util/json_util"
 )
 
@@ -24,25 +24,24 @@ type User struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
-type ClientTraffic struct {
-	Id        int    `json:"id" form:"id" gorm:"primaryKey;autoIncrement"`
-	InboundId int    `json:"inboundId" form:"enable"`
-	Enable    bool   `json:"enable" form:"enable"`
-	Email     string `json:"email" form:"email" gorm:"unique"`
-	Up        int64  `json:"up" form:"up"`
-	Down      int64  `json:"down" form:"down"`
+type Traffic struct {
+	Id               int64 `json:"id" form:"id" gorm:"primaryKey;autoIncrement"`
+	InboundClientsID int64 `json:"inboundClientID" form:"inboundClientID"`
+	Up               int64 `json:"up" form:"up"`
+	Down             int64 `json:"down" form:"down"`
+	CreatedAt        time.Time
 }
 type Inbound struct {
-	Id          int             `json:"id" form:"id" gorm:"primaryKey;autoIncrement"`
-	UserId      int             `json:"-"`
-	Up          int64           `json:"up" form:"up"`
-	Down        int64           `json:"down" form:"down"`
-	Total       int64           `json:"total" form:"total"`
-	Remark      string          `json:"remark" form:"remark"`
-	Enable      bool            `json:"enable" form:"enable"`
-	ExpiryTime  int64           `json:"expiryTime" form:"expiryTime"`
-	ClientStats []ClientTraffic `gorm:"foreignKey:InboundId;references:Id" json:"clientStats" form:"clientStats"`
-	Clients     []*Client       `gorm:"many2many:inbound_client;"`
+	Id         int    `json:"id" form:"id" gorm:"primaryKey;autoIncrement"`
+	UserId     int    `json:"-"`
+	Up         int64  `json:"up" form:"up"`
+	Down       int64  `json:"down" form:"down"`
+	Total      int64  `json:"total" form:"total"`
+	Remark     string `json:"remark" form:"remark"`
+	Enable     bool   `json:"enable" form:"enable"`
+	ExpiryTime int64  `json:"expiryTime" form:"expiryTime"`
+	//ClientStats []ClientTraffic `gorm:"foreignKey:InboundId;references:Id" json:"clientStats" form:"clientStats"`
+	Clients []*Client `gorm:"many2many:inbound_clients;"`
 
 	// config part
 	Listen         string   `json:"listen" form:"listen"`
@@ -94,11 +93,16 @@ func (i *Inbound) GenXrayInboundConfig() *InboundConfig {
 	if listen != "" {
 		listen = fmt.Sprintf("\"%v\"", listen)
 	}
+	cl, err := json.Marshal(i.Clients)
+	if err != nil {
+		return nil
+	}
 	return &InboundConfig{
-		Listen:         json_util.RawMessage(listen),
-		Port:           i.Port,
-		Protocol:       string(i.Protocol),
-		Settings:       json_util.RawMessage(i.Settings),
+		Listen:   json_util.RawMessage(listen),
+		Port:     i.Port,
+		Protocol: string(i.Protocol),
+		//Settings:       json_util.RawMessage(i.Clients),
+		Settings:       cl,
 		StreamSettings: json_util.RawMessage(i.StreamSettings),
 		Tag:            i.Tag,
 		Sniffing:       json_util.RawMessage(i.Sniffing),
@@ -111,7 +115,7 @@ type Setting struct {
 	Value string `json:"value" form:"value"`
 }
 type Client struct {
-	ID         uuid.UUID  `gorm:"type:uuid" json:"id" gorm:"primaryKey"`
+	ID         int64      `gorm:"autoIncrement" json:"id" gorm:"primaryKey"`
 	Creator    int        `json:"-"`
 	AlterIds   uint16     `json:"alterId"`
 	Enable     bool       `json:"enable" form:"enable"`
@@ -119,24 +123,24 @@ type Client struct {
 	LimitIP    int        `json:"limitIp"`
 	Security   string     `json:"security"`
 	TotalGB    int64      `json:"totalGB" form:"totalGB"`
+	TotalUp    int64      `json:"TotalUp" form:"TotalUp"`
+	TotalDown  int64      `json:"TotalDown" form:"TotalDown"`
 	ExpiryTime int64      `json:"expiryTime" form:"expiryTime"`
-	Inbound    []*Inbound `gorm:"many2many:inbound_client;"`
+	Inbounds   []*Inbound `gorm:"many2many:inbound_clients;"`
 }
 
-type InboundClient struct {
-	ClientID      int `gorm:"primaryKey"`
-	InboundID     int `gorm:"primaryKey"`
-	ClientTraffic []ClientTraffic
+type InboundClients struct {
+	ID        uint64 `gorm:"primaryKey"`
+	ClientID  int
+	InboundID int
+	TotalUp   int
+	TotalDown int
+	CreatedAt time.Time
+	UpdateAt  time.Time
 }
 
 type InboundClientIps struct {
 	Id          int    `json:"id" gorm:"primaryKey;autoIncrement"`
 	ClientEmail string `json:"clientEmail" form:"clientEmail" gorm:"unique"`
 	Ips         string `json:"ips" form:"ips"`
-}
-
-func (c *Client) BeforeCreate(tx *gorm.DB) (err error) {
-	c.ID = uuid.NewV4()
-
-	return
 }
