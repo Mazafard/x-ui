@@ -3,9 +3,9 @@ package job
 import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/satori/go.uuid"
 	"net"
 	"os"
+	"strconv"
 	"time"
 	"x-ui/logger"
 	"x-ui/util/common"
@@ -208,7 +208,7 @@ func (j *StatsNotifyJob) OnReceive() *StatsNotifyJob {
 			msg.Text = "bot is ok."
 
 		case "usage":
-			txt := uuid.Must(uuid.FromString(update.Message.CommandArguments()))
+			txt, _ := strconv.ParseInt(update.Message.CommandArguments(), 10, 64)
 			msg.Text = j.getClientUsage(txt)
 
 		default:
@@ -222,7 +222,7 @@ func (j *StatsNotifyJob) OnReceive() *StatsNotifyJob {
 	return j
 
 }
-func (j *StatsNotifyJob) getClientUsage(id uuid.UUID) string {
+func (j *StatsNotifyJob) getClientUsage(id int64) string {
 	traffic, err := j.inboundService.GetClientTrafficById(id)
 	if err != nil {
 		logger.Warning(err)

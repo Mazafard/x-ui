@@ -3,7 +3,6 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"time"
 	"x-ui/database"
@@ -19,7 +18,7 @@ type InboundService struct {
 func (s *InboundService) GetInbounds(userId int) ([]*model.Inbound, error) {
 	db := database.GetDB()
 	var inbounds []*model.Inbound
-	err := db.Model(model.Inbound{}).Preload("ClientStats").Where("user_id = ?", userId).Find(&inbounds).Error
+	err := db.Model(model.Inbound{}).Where("user_id = ?", userId).Find(&inbounds).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
 	}
@@ -29,7 +28,7 @@ func (s *InboundService) GetInbounds(userId int) ([]*model.Inbound, error) {
 func (s *InboundService) GetAllInbounds() ([]*model.Inbound, error) {
 	db := database.GetDB()
 	var inbounds []*model.Inbound
-	err := db.Model(model.Inbound{}).Preload("ClientStats").Find(&inbounds).Error
+	err := db.Model(model.Inbound{}).Preload("Clients").Find(&inbounds).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
 	}
@@ -270,7 +269,7 @@ func (s *InboundService) AddClientTraffic(traffics []*xray.ClientTraffic) (err e
 	for _, traffic := range traffics {
 		inbound := &model.Inbound{}
 
-		err := txInbound.Preload("Client", "email = ?", "%"+traffic.Email+"%").First(inbound).Error
+		err := txInbound.Preload("Clients", "Email = ?", "%"+traffic.Email+"%").First(inbound).Error
 		//err := txInbound.Where("settings like ?", "%"+traffic.Email+"%").First(inbound).Error
 		traffic.InboundId = inbound.Id
 		if err != nil {
@@ -283,22 +282,22 @@ func (s *InboundService) AddClientTraffic(traffics []*xray.ClientTraffic) (err e
 			continue
 		}
 		// get settings clients
-		settings := map[string][]model.Client{}
-		json.Unmarshal([]byte(inbound.Settings), &settings)
-		clients := settings["clients"]
-		for _, client := range clients {
-			if traffic.Email == client.Email {
-				traffic.ExpiryTime = client.ExpiryTime
-				traffic.Total = client.TotalGB
-			}
-		}
+		//settings := map[string][]model.Client{}
+		//json.Unmarshal([]byte(inbound.Settings), &settings)
+		//clients := settings["clients"]
+		//for _, client := range clients {
+		//	if traffic.Email == client.Email {
+		//		traffic.ExpiryTime = client.ExpiryTime
+		//		traffic.Total = client.TotalGB
+		//	}
+		//}
 		if tx.Where("inbound_id = ?", inbound.Id).Where("email = ?", traffic.Email).
 			UpdateColumn("enable", true).
 			UpdateColumn("expiry_time", traffic.ExpiryTime).
 			UpdateColumn("total", traffic.Total).
 			UpdateColumn("up", gorm.Expr("up + ?", traffic.Up)).
 			UpdateColumn("down", gorm.Expr("down + ?", traffic.Down)).RowsAffected == 0 {
-			err = tx.Create(traffic).Error
+			err = tx.FirstOrCreate(traffic).Error
 		}
 
 		if err != nil {
@@ -323,8 +322,8 @@ func (s *InboundService) DisableInvalidInbounds() (int64, error) {
 func (s *InboundService) DisableInvalidClients() (int64, error) {
 	db := database.GetDB()
 	now := time.Now().Unix() * 1000
-	result := db.Model(xray.ClientTraffic{}).
-		Where("((total > 0 and up + down >= total) or (expiry_time > 0 and expiry_time <= ?)) and enable = ?", now, true).
+	result := db.Debug().Model(model.Client{}).Where("Enable = ?", true).Preload("Inbounds", "Total_up > 0 ").
+		Where("((total_up > 0 and total_up + total_down >= total_gb) or (expiry_time > 0 and expiry_time <= ?))", now).
 		Update("enable", false)
 	err := result.Error
 	count := result.RowsAffected
@@ -400,12 +399,12 @@ func (s *InboundService) ResetClientTraffic(clientEmail string) error {
 	}
 	return nil
 }
-func (s *InboundService) GetClientTrafficById(uuid uuid.UUID) (traffic *xray.ClientTraffic, err error) {
+func (s *InboundService) GetClientTrafficById(id int64) (traffic *xray.ClientTraffic, err error) {
 	db := database.GetDB()
 	inbound := &model.Inbound{}
 	traffic = &xray.ClientTraffic{}
 
-	err = db.Model(model.Inbound{}).Where("settings like ?", "%"+uuid.String()+"%").First(inbound).Error
+	err = db.Model(model.Inbound{}).Where("settings like ?", id).First(inbound).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			logger.Warning(err)
@@ -419,7 +418,7 @@ func (s *InboundService) GetClientTrafficById(uuid uuid.UUID) (traffic *xray.Cli
 	json.Unmarshal([]byte(inbound.Settings), &settings)
 	clients := settings["clients"]
 	for _, client := range clients {
-		if uuid == client.ID {
+		if id == client.ID {
 			traffic.Email = client.Email
 		}
 	}

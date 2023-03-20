@@ -109,7 +109,7 @@ func (a *ClientController) addClient(c *gin.Context) {
 		return
 	}
 	for _, inbound := range inbounds {
-		reqBody.Client.Inbound = append(reqBody.Client.Inbound, inbound)
+		reqBody.Client.Inbounds = append(reqBody.Client.Inbounds, inbound)
 	}
 
 	user := session.GetLoginUser(c)

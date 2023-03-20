@@ -13,7 +13,7 @@ type ClientService struct {
 func (s *ClientService) GetClients(userId int) ([]*model.Client, error) {
 	db := database.GetDB()
 	var clients []*model.Client
-	err := db.Model(model.Client{}).Preload("Inbound").Where("creator = ?", userId).Find(&clients).Error
+	err := db.Model(model.Client{}).Preload("Inbounds").Where("creator = ?", userId).Find(&clients).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
 	}
@@ -21,7 +21,7 @@ func (s *ClientService) GetClients(userId int) ([]*model.Client, error) {
 }
 func (s *ClientService) GetClient(userId int, clientId uuid.UUID) (client *model.Client, err error) {
 	db := database.GetDB()
-	err = db.Model(model.Client{}).Preload("Inbound").Where("creator = ? AND id = ?", userId, clientId).Find(&client).Error
+	err = db.Model(model.Client{}).Preload("Inbounds").Where("creator = ? AND id = ?", userId, clientId).Find(&client).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
 	}

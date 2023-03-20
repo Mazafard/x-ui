@@ -40,7 +40,7 @@ func (a *SettingController) initRouter(g *gin.RouterGroup) {
 func (a *SettingController) getAllSetting(c *gin.Context) {
 	allSetting, err := a.settingService.GetAllSetting()
 	if err != nil {
-		jsonMsg(c, "获取设置", err)
+		jsonMsg(c, "get settings", err)
 		return
 	}
 	jsonObj(c, allSetting, nil)
