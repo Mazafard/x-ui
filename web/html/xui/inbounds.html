@@ -190,7 +190,7 @@
             },
             async getDBInbounds() {
                 this.loading();
-                const msg = await HttpUtil.get('/xui/inbound/');
+                const msg = await HttpUtil.get('/xui/inbounds/');
                 this.loading(false);
                 if (!msg.success) {
                     return;
@@ -279,7 +279,7 @@
                     streamSettings: inbound.stream.toString(),
                     sniffing: inbound.canSniffing() ? inbound.sniffing.toString() : '{}',
                 };
-                await this.submit('/xui/inbound/', data, inModal);
+                await this.submit('/xui/inbounds/', data, inModal);
             },
             async updateInbound(inbound, dbInbound) {
                 const data = {
@@ -297,7 +297,7 @@
                     streamSettings: inbound.stream.toString(),
                     sniffing: inbound.canSniffing() ? inbound.sniffing.toString() : '{}',
                 };
-                await this.submitPut(`/xui/inbound/${dbInbound.id}`, data, inModal);
+                await this.submitPut(`/xui/inbounds/${dbInbound.id}`, data, inModal);
             },
             resetTraffic(dbInbound) {
                 this.$confirm({
@@ -319,7 +319,7 @@
                     content: '{{ i18n "pages.inbounds.deleteInboundContent"}}',
                     okText: '{{ i18n "delete"}}',
                     cancelText: '{{ i18n "cancel"}}',
-                    onOk: () => this.submit('/xui/inbound/del/' + dbInbound.id),
+                    onOk: () => this.submit('/xui/inbounds/del/' + dbInbound.id),
                 });
             },
             showQrcode(dbInbound) {
@@ -330,7 +330,7 @@
                 infoModal.show(dbInbound);
             },
             switchEnable(dbInbound) {
-                this.submitPatch(`/xui/inbound/${dbInbound.id}`, dbInbound);
+                this.submitPatch(`/xui/inbounds/${dbInbound.id}`, dbInbound);
             },
             async submit(url, data, modal) {
                 const msg = await HttpUtil.postWithModal(url, data, modal);

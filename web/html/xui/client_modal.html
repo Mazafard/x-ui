@@ -90,7 +90,7 @@
 
             async getDBClientIps(email,event) {
 
-                const msg = await HttpUtil.post('/xui/client/clientIps/'+ email);
+                const msg = await HttpUtil.post('/xui/clients/clientIps/'+ email);
                 if (!msg.success) {
                     return;
                 }
@@ -106,14 +106,14 @@
 
             },
             async clearDBClientIps(email,event) {
-                const msg = await HttpUtil.post('/xui/client/clearClientIps/'+ email);
+                const msg = await HttpUtil.post('/xui/clients/clearClientIps/'+ email);
                 if (!msg.success) {
                     return;
                 }
                 event.target.value = ""
             },
             async resetClientTraffic(client,event) {
-                const msg = await HttpUtil.post('/xui/client/resetClientTraffic/'+ client.email);
+                const msg = await HttpUtil.post('/xui/clientss/resetClientTraffic/'+ client.email);
                 if (!msg.success) {
                     return;
                 }

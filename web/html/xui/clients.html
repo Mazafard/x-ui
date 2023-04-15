@@ -165,7 +165,7 @@
             },
             async getDBClients() {
                 this.loading();
-                const msg = await HttpUtil.get('/xui/client/');
+                const msg = await HttpUtil.get('/xui/clients/');
                 this.loading(false);
                 if (!msg.success) {
                     return;
@@ -258,7 +258,7 @@
                     streamSettings: client.stream.toString(),
                     sniffing: client.canSniffing() ? client.sniffing.toString() : '{}',
                 };
-                await this.submit('/xui/client/', data, clModal);
+                await this.submit('/xui/clients/', data, clModal);
             },
             async updateClient(client, dbClient) {
                 const data = {
@@ -276,7 +276,7 @@
                     streamSettings: client.stream.toString(),
                     sniffing: client.canSniffing() ? client.sniffing.toString() : '{}',
                 };
-                await this.submitPut(`/xui/client/${dbClient.id}`, data, clModal);
+                await this.submitPut(`/xui/clients/${dbClient.id}`, data, clModal);
             },
             resetTraffic(dbClient) {
                 this.$confirm({
@@ -298,7 +298,7 @@
                     content: '{{ i18n "pages.clients.deleteClientContent"}}',
                     okText: '{{ i18n "delete"}}',
                     cancelText: '{{ i18n "cancel"}}',
-                    onOk: () => this.submit('/xui/client/del/' + dbClient.id),
+                    onOk: () => this.submit('/xui/clients/del/' + dbClient.id),
                 });
             },
             showQrcode(dbClient) {
@@ -311,7 +311,7 @@
             },
             switchEnable(dbClient) {
                 status_enable = {"status": dbClient.enable}
-                this.submitPatch(`/xui/client/${dbClient.id}`, status_enable);
+                this.submitPatch(`/xui/clients/${dbClient.id}`, status_enable);
             },
             async submit(url, data, modal) {
                 const msg = await HttpUtil.postWithModal(url, data, modal);
