@@ -89,9 +89,9 @@ func (a *ClientController) getClient(c *gin.Context) {
 //		jsonObj(c, inbound, nil)
 //	}
 func (a *ClientController) addClient(c *gin.Context) {
-	var reqBody struct {
-		Client model.Client `json:"Client" binding:"required"`
-	}
+
+	var reqBody model.Client
+
 	var err error
 	//var inbound *model.Inbound
 	//client := &model.Client{}
@@ -100,18 +100,18 @@ func (a *ClientController) addClient(c *gin.Context) {
 		//jsonMsg(c, I18n(c, "pages.clients.addTo"), err)
 		return
 	}
-	_, err = a.inboundService.GetInbound(reqBody.Client.InboundID)
+	_, err = a.inboundService.GetInbound(reqBody.InboundID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error in inbound": err.Error()})
 		return
 	}
 
 	user := session.GetLoginUser(c)
-	reqBody.Client.Creator = user.Id
-	reqBody.Client.Enable = true
+	reqBody.Creator = user.Id
+	reqBody.Enable = true
 	//Client.Tag = fmt.Sprintf("Client-%v", inbound.Port)
-	reqBody.Client, err = a.clientService.AddClient(reqBody.Client)
-	jsonMsgObj(c, I18n(c, "pages.clients.addTo"), reqBody.Client, err)
+	reqBody, err = a.clientService.AddClient(reqBody)
+	jsonMsgObj(c, I18n(c, "pages.clients.addTo"), reqBody, err)
 	if err == nil {
 		a.xrayService.SetToNeedRestart()
 	}
