@@ -160,7 +160,8 @@ class DBInbound {
 class DBClient {
 
     constructor(data) {
-        this.inbound = [];
+        this.InboundID = 0;
+        this.Inbound ={};
         this.alterId = "";
         this.email = "";
         this.enable = true;
@@ -203,14 +204,14 @@ class DBClient {
     }
 
     toClient() {
-        // let inbounds = {};
-        // if (!ObjectUtil.isEmpty(this.inbound)) {
-        //     inbounds = JSON.parse(this.inbound);
-        // }
+        let settings = {};
+        if (!ObjectUtil.isEmpty(this.Inbound.settings)) {
+            settings = JSON.parse(this.Inbound.settings);
+        }
 
 
         const config = {
-            // Inbound: inbounds,
+            Inbound: Inbound,
             alterId: this.alterId,
             email: this.email,
             enable: this.enable,
@@ -225,10 +226,20 @@ class DBClient {
     }
 
 
-
+    hasLink() {
+        switch (this.Inbound.protocol) {
+            case Protocols.VMESS:
+            case Protocols.VLESS:
+            case Protocols.TROJAN:
+            case Protocols.SHADOWSOCKS:
+                return true;
+            default:
+                return false;
+        }
+    }
     genLink() {
         const client = this.toClient();
-        return client.genLink(this.address, this.remark);
+        return client.genLink(this.Inbound.address, this.Inbound.remark);
     }
 }
 

@@ -319,7 +319,7 @@ func (s *Server) startTask() {
 	s.cron.AddJob("@every 30s", job.NewCheckInboundJob())
 
 	// check client ips from log file every 10 sec
-	s.cron.AddJob("@every 10s", job.NewCheckClientIpJob())
+	//s.cron.AddJob("@every 10s", job.NewCheckClientIpJob())
 
 	// Prompt the traffic status once a day, at 8:30 Shanghai time
 	var entry cron.EntryID

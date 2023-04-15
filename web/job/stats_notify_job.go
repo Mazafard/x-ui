@@ -5,7 +5,6 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"net"
 	"os"
-	"strconv"
 	"time"
 	"x-ui/logger"
 	"x-ui/util/common"
@@ -207,9 +206,9 @@ func (j *StatsNotifyJob) OnReceive() *StatsNotifyJob {
 		case "status":
 			msg.Text = "bot is ok."
 
-		case "usage":
-			txt, _ := strconv.ParseInt(update.Message.CommandArguments(), 10, 64)
-			msg.Text = j.getClientUsage(txt)
+		//case "usage":
+		//	txt := uuid.Must(uuid.FromString(update.Message.CommandArguments()))
+		//	msg.Text = j.getClientUsage(txt)
 
 		default:
 			msg.Text = "I don't know that command, /help"
@@ -222,27 +221,29 @@ func (j *StatsNotifyJob) OnReceive() *StatsNotifyJob {
 	return j
 
 }
-func (j *StatsNotifyJob) getClientUsage(id int64) string {
-	traffic, err := j.inboundService.GetClientTrafficById(id)
-	if err != nil {
-		logger.Warning(err)
-		return "something wrong!"
-	}
-	expiryTime := ""
-	if traffic.ExpiryTime == 0 {
-		expiryTime = fmt.Sprintf("unlimited")
-	} else {
-		expiryTime = fmt.Sprintf("%s", time.Unix((traffic.ExpiryTime/1000), 0).Format("2006-01-02 15:04:05"))
-	}
-	total := ""
-	if traffic.Total == 0 {
-		total = fmt.Sprintf("unlimited")
-	} else {
-		total = fmt.Sprintf("%s", common.FormatTraffic((traffic.Total)))
-	}
-	output := fmt.Sprintf("💡 Active: %t\r\n📧 Email: %s\r\n🔼 Upload↑: %s\r\n🔽 Download↓: %s\r\n🔄 Total: %s / %s\r\n📅 Expire in: %s\r\n",
-		traffic.Enable, traffic.Email, common.FormatTraffic(traffic.Up), common.FormatTraffic(traffic.Down), common.FormatTraffic((traffic.Up + traffic.Down)),
-		total, expiryTime)
 
-	return output
-}
+//
+//func (j *StatsNotifyJob) getClientUsage(id uuid.UUID) string {
+//	traffic, err := j.inboundService.GetClientTrafficById(id)
+//	if err != nil {
+//		logger.Warning(err)
+//		return "something wrong!"
+//	}
+//	expiryTime := ""
+//	if traffic.ExpiryTime == 0 {
+//		expiryTime = fmt.Sprintf("unlimited")
+//	} else {
+//		expiryTime = fmt.Sprintf("%s", time.Unix((traffic.ExpiryTime/1000), 0).Format("2006-01-02 15:04:05"))
+//	}
+//	total := ""
+//	if traffic.Total == 0 {
+//		total = fmt.Sprintf("unlimited")
+//	} else {
+//		total = fmt.Sprintf("%s", common.FormatTraffic((traffic.Total)))
+//	}
+//	output := fmt.Sprintf("💡 Active: %t\r\n📧 Email: %s\r\n🔼 Upload↑: %s\r\n🔽 Download↓: %s\r\n🔄 Total: %s / %s\r\n📅 Expire in: %s\r\n",
+//		traffic.Enable, traffic.Email, common.FormatTraffic(traffic.Up), common.FormatTraffic(traffic.Down), common.FormatTraffic((traffic.Up + traffic.Down)),
+//		total, expiryTime)
+//
+//	return output
+//}

@@ -22,12 +22,13 @@ func NewClientController(g *gin.RouterGroup) *ClientController {
 }
 
 func (a *ClientController) clientRouter(g *gin.RouterGroup) {
-	g = g.Group("/client")
+	g = g.Group("/clients")
 
 	g.GET("/", a.getClients)
 	g.POST("/", a.addClient)
 	g.GET("/:id", a.getClient)
 	g.DELETE("/:id", a.delClient)
+	g.PATCH("/:id", a.enableClient)
 	//g.PUT("/:id", a.updateClient)
 	//
 	//g.POST("/clientIps/:email", a.getClientIps)
@@ -60,7 +61,11 @@ func (a *ClientController) getClients(c *gin.Context) {
 }
 
 func (a *ClientController) getClient(c *gin.Context) {
-	clientId := uuid.Must(uuid.FromString(c.Param("id")))
+	clientId, err := uuid.FromString(c.Param("id"))
+	if err != nil {
+		jsonMsg(c, I18n(c, "pages.clients.toasts.obtain"), err)
+		return
+	}
 	user := session.GetLoginUser(c)
 	clients, err := a.clientService.GetClient(user.Id, clientId)
 	if err != nil {
@@ -71,7 +76,7 @@ func (a *ClientController) getClient(c *gin.Context) {
 }
 
 //	func (a *InboundController) getInbound(c *gin.Context) {
-//		id, err := strconv.Atoi(c.Param("id"))
+//		id, err := uuid.FromString(c.Param("id"))
 //		if err != nil {
 //			jsonMsg(c, I18n(c, "get"), err)
 //			return
@@ -85,31 +90,20 @@ func (a *ClientController) getClient(c *gin.Context) {
 //	}
 func (a *ClientController) addClient(c *gin.Context) {
 	var reqBody struct {
-		InboundIds []int        `json:"InboundIds" binding:"required"`
-		Client     model.Client `json:"Client" binding:"required"`
+		Client model.Client `json:"Client" binding:"required"`
 	}
 	var err error
+	//var inbound *model.Inbound
 	//client := &model.Client{}
-
 	if err = c.ShouldBind(&reqBody); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		//jsonMsg(c, I18n(c, "pages.clients.addTo"), err)
 		return
 	}
-	var inbounds []*model.Inbound
-	test := reqBody.InboundIds
-	inbounds, err = a.inboundService.GetInboundsId(test)
+	_, err = a.inboundService.GetInbound(reqBody.Client.InboundID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-
-	}
-
-	if len(inbounds) != len(reqBody.InboundIds) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "not all inbound IDs exist"})
+		c.JSON(http.StatusBadRequest, gin.H{"error in inbound": err.Error()})
 		return
-	}
-	for _, inbound := range inbounds {
-		reqBody.Client.Inbounds = append(reqBody.Client.Inbounds, inbound)
 	}
 
 	user := session.GetLoginUser(c)
@@ -124,30 +118,43 @@ func (a *ClientController) addClient(c *gin.Context) {
 }
 
 func (a *ClientController) delClient(c *gin.Context) {
-	clientId := uuid.Must(uuid.FromString(c.Param("id")))
+	clientId, err := uuid.FromString(c.Param("id"))
 	//user := session.GetLoginUser(c)
 
-	err := a.clientService.DelClient(clientId)
+	err = a.clientService.DelClient(clientId)
 	jsonMsgObj(c, I18n(c, "delete"), clientId, err)
 	if err == nil {
 		a.xrayService.SetToNeedRestart()
 	}
 }
 
-//func (a *InboundController) updateInbound(c *gin.Context) {
-//	id, err := strconv.Atoi(c.Param("id"))
-//	if err != nil {
-//		jsonMsg(c, I18n(c, "pages.inbounds.revise"), err)
-//		return
-//	}
-//	inbound := &model.Inbound{
-//		Id: id,
-//	}
-//	err = c.ShouldBind(inbound)
-//	if err != nil {
-//		jsonMsg(c, I18n(c, "pages.inbounds.revise"), err)
-//		return
-//	}
+func (a *ClientController) enableClient(c *gin.Context) {
+	clientId, err := uuid.FromString(c.Param("id"))
+	if err != nil {
+		jsonMsg(c, I18n(c, "pages.client.revise"), err)
+		return
+	}
+	user := session.GetLoginUser(c)
+	client, err := a.clientService.GetClient(user.Id, clientId)
+	if err != nil {
+		jsonMsg(c, I18n(c, "pages.client.revise"), err)
+		return
+	}
+	var reqBody struct {
+		status bool `gorm:"serializer:json" form:"status" binding:"required"`
+	}
+
+	if err = c.ShouldBind(&reqBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	client, err = a.clientService.ChangeStatusClient(client, reqBody.status)
+	jsonMsgObj(c, I18n(c, "pages.client.revise"), client, err)
+	if err == nil {
+		a.xrayService.SetToNeedRestart()
+	}
+}
+
 //	inbound, err = a.inboundService.UpdateInbound(inbound)
 //	jsonMsgObj(c, I18n(c, "pages.inbounds.revise"), inbound, err)
 //	if err == nil {

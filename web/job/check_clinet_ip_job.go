@@ -12,7 +12,7 @@ import (
 	// "strconv"
 	"github.com/go-cmd/cmd"
 	"net"
-	"sort"
+	//"sort"
 	"strings"
 	"time"
 )
@@ -32,7 +32,7 @@ func NewCheckClientIpJob() *CheckClientIpJob {
 
 func (j *CheckClientIpJob) Run() {
 	logger.Debug("Check Client IP Job...")
-	processLogFile()
+	//processLogFile()
 
 	// disAllowedIps = []string{"192.168.1.183","192.168.1.197"}
 	blockedIps := []byte(ss.Join(disAllowedIps, ","))
@@ -41,74 +41,75 @@ func (j *CheckClientIpJob) Run() {
 
 }
 
-func processLogFile() {
-	accessLogPath := GetAccessLogPath()
-	if accessLogPath == "" {
-		logger.Warning("xray log not init in config.json")
-		return
-	}
+//func processLogFile() {
+//	accessLogPath := GetAccessLogPath()
+//	if accessLogPath == "" {
+//		logger.Warning("xray log not init in config.json")
+//		return
+//	}
+//
+//	data, err := os.ReadFile(accessLogPath)
+//	InboundClientIps := make(map[string][]string)
+//	checkError(err)
+//
+//	// clean log
+//	if err := os.Truncate(GetAccessLogPath(), 0); err != nil {
+//		checkError(err)
+//	}
+//
+//	lines := ss.Split(string(data), "\n")
+//	for _, line := range lines {
+//		ipRegx, _ := regexp.Compile(`[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+`)
+//		emailRegx, _ := regexp.Compile(`email:.+`)
+//
+//		matchesIp := ipRegx.FindString(line)
+//		if len(matchesIp) > 0 {
+//			ip := string(matchesIp)
+//			if ip == "127.0.0.1" || ip == "1.1.1.1" {
+//				continue
+//			}
+//
+//			matchesEmail := emailRegx.FindString(line)
+//			if matchesEmail == "" {
+//				continue
+//			}
+//			matchesEmail = ss.Split(matchesEmail, "email: ")[1]
+//
+//			if InboundClientIps[matchesEmail] != nil {
+//				if contains(InboundClientIps[matchesEmail], ip) {
+//					continue
+//				}
+//				InboundClientIps[matchesEmail] = append(InboundClientIps[matchesEmail], ip)
+//
+//			} else {
+//				InboundClientIps[matchesEmail] = append(InboundClientIps[matchesEmail], ip)
+//			}
+//		}
+//
+//	}
+//	disAllowedIps = []string{}
+//
+//	for clientEmail, ips := range InboundClientIps {
+//		inboundClientIps, err := GetInboundClientIps(clientEmail)
+//		sort.Sort(sort.StringSlice(ips))
+//		if err != nil {
+//			addInboundClientIps(clientEmail, ips)
+//
+//		} else {
+//			updateInboundClientIps(inboundClientIps, clientEmail, ips)
+//		}
+//
+//	}
+//
+//	// check if inbound connection is more than limited ip and drop connection
+//	LimitDevice := func() { LimitDevice() }
+//
+//	stop := schedule(LimitDevice, 1000*time.Millisecond)
+//	time.Sleep(10 * time.Second)
+//	stop <- true
+//
+//}
 
-	data, err := os.ReadFile(accessLogPath)
-	InboundClientIps := make(map[string][]string)
-	checkError(err)
-
-	// clean log
-	if err := os.Truncate(GetAccessLogPath(), 0); err != nil {
-		checkError(err)
-	}
-
-	lines := ss.Split(string(data), "\n")
-	for _, line := range lines {
-		ipRegx, _ := regexp.Compile(`[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+`)
-		emailRegx, _ := regexp.Compile(`email:.+`)
-
-		matchesIp := ipRegx.FindString(line)
-		if len(matchesIp) > 0 {
-			ip := string(matchesIp)
-			if ip == "127.0.0.1" || ip == "1.1.1.1" {
-				continue
-			}
-
-			matchesEmail := emailRegx.FindString(line)
-			if matchesEmail == "" {
-				continue
-			}
-			matchesEmail = ss.Split(matchesEmail, "email: ")[1]
-
-			if InboundClientIps[matchesEmail] != nil {
-				if contains(InboundClientIps[matchesEmail], ip) {
-					continue
-				}
-				InboundClientIps[matchesEmail] = append(InboundClientIps[matchesEmail], ip)
-
-			} else {
-				InboundClientIps[matchesEmail] = append(InboundClientIps[matchesEmail], ip)
-			}
-		}
-
-	}
-	disAllowedIps = []string{}
-
-	for clientEmail, ips := range InboundClientIps {
-		inboundClientIps, err := GetInboundClientIps(clientEmail)
-		sort.Sort(sort.StringSlice(ips))
-		if err != nil {
-			addInboundClientIps(clientEmail, ips)
-
-		} else {
-			updateInboundClientIps(inboundClientIps, clientEmail, ips)
-		}
-
-	}
-
-	// check if inbound connection is more than limited ip and drop connection
-	LimitDevice := func() { LimitDevice() }
-
-	stop := schedule(LimitDevice, 1000*time.Millisecond)
-	time.Sleep(10 * time.Second)
-	stop <- true
-
-}
 func GetAccessLogPath() string {
 
 	config, err := os.ReadFile("bin/config.json")
@@ -177,48 +178,50 @@ func addInboundClientIps(clientEmail string, ips []string) error {
 	}
 	return nil
 }
-func updateInboundClientIps(inboundClientIps *model.InboundClientIps, clientEmail string, ips []string) error {
 
-	jsonIps, err := json.Marshal(ips)
-	checkError(err)
+//func updateInboundClientIps(inboundClientIps *model.InboundClientIps, clientEmail string, ips []string) error {
+//
+//	jsonIps, err := json.Marshal(ips)
+//	checkError(err)
+//
+//	inboundClientIps.ClientEmail = clientEmail
+//	inboundClientIps.Ips = string(jsonIps)
+//
+//	// check inbound limitation
+//	inbound, err := GetInboundByEmail(clientEmail)
+//	checkError(err)
+//
+//	if inbound.Settings == "" {
+//		logger.Debug("wrong data ", inbound)
+//		return nil
+//	}
+//
+//	settings := map[string][]model.Client{}
+//	json.Unmarshal([]byte(inbound.Settings), &settings)
+//	clients := settings["clients"]
+//
+//	for _, client := range clients {
+//		if client.Email == clientEmail {
+//
+//			limitIp := client.LimitIP
+//
+//			if limitIp < len(ips) && limitIp != 0 && inbound.Enable {
+//
+//				disAllowedIps = append(disAllowedIps, ips[limitIp:]...)
+//			}
+//		}
+//	}
+//	logger.Debug("disAllowedIps ", disAllowedIps)
+//	sort.Sort(sort.StringSlice(disAllowedIps))
+//
+//	db := database.GetDB()
+//	err = db.Save(inboundClientIps).Error
+//	if err != nil {
+//		return err
+//	}
+//	return nil
+//}
 
-	inboundClientIps.ClientEmail = clientEmail
-	inboundClientIps.Ips = string(jsonIps)
-
-	// check inbound limitation
-	inbound, err := GetInboundByEmail(clientEmail)
-	checkError(err)
-
-	if inbound.Settings == "" {
-		logger.Debug("wrong data ", inbound)
-		return nil
-	}
-
-	settings := map[string][]model.Client{}
-	json.Unmarshal([]byte(inbound.Settings), &settings)
-	clients := settings["clients"]
-
-	for _, client := range clients {
-		if client.Email == clientEmail {
-
-			limitIp := client.LimitIP
-
-			if limitIp < len(ips) && limitIp != 0 && inbound.Enable {
-
-				disAllowedIps = append(disAllowedIps, ips[limitIp:]...)
-			}
-		}
-	}
-	logger.Debug("disAllowedIps ", disAllowedIps)
-	sort.Sort(sort.StringSlice(disAllowedIps))
-
-	db := database.GetDB()
-	err = db.Save(inboundClientIps).Error
-	if err != nil {
-		return err
-	}
-	return nil
-}
 func DisableInbound(id int) error {
 	db := database.GetDB()
 	result := db.Model(model.Inbound{}).

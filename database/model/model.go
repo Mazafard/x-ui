@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/satori/go.uuid"
+	"gorm.io/gorm"
 	"time"
 	"x-ui/util/json_util"
 )
@@ -24,24 +26,18 @@ type User struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
-type Traffic struct {
-	Id               int64 `json:"id" form:"id" gorm:"primaryKey;autoIncrement"`
-	InboundClientsID int64 `json:"inboundClientID" form:"inboundClientID"`
-	Up               int64 `json:"up" form:"up"`
-	Down             int64 `json:"down" form:"down"`
-	CreatedAt        time.Time
-}
+
 type Inbound struct {
-	Id         int    `json:"id" form:"id" gorm:"primaryKey;autoIncrement"`
-	UserId     int    `json:"-"`
-	Up         int64  `json:"up" form:"up"`
-	Down       int64  `json:"down" form:"down"`
-	Total      int64  `json:"total" form:"total"`
-	Remark     string `json:"remark" form:"remark"`
-	Enable     bool   `json:"enable" form:"enable"`
-	ExpiryTime int64  `json:"expiryTime" form:"expiryTime"`
+	ID         uuid.UUID `gorm:"type:uuid" json:"id" gorm:"primaryKey"`
+	UserId     int       `json:"-"`
+	Up         int64     `json:"up" form:"up"`
+	Down       int64     `json:"down" form:"down"`
+	Total      int64     `json:"total" form:"total"`
+	Remark     string    `json:"remark" form:"remark"`
+	Enable     bool      `json:"enable" form:"enable"`
+	ExpiryTime int64     `json:"expiryTime" form:"expiryTime"`
 	//ClientStats []ClientTraffic `gorm:"foreignKey:InboundId;references:Id" json:"clientStats" form:"clientStats"`
-	Clients []*Client `gorm:"many2many:inbound_clients;"`
+	Clients []Client `gorm:"foreignKey:InboundID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 
 	// config part
 	Listen         string   `json:"listen" form:"listen"`
@@ -51,6 +47,12 @@ type Inbound struct {
 	StreamSettings string   `json:"streamSettings" form:"streamSettings"`
 	Tag            string   `json:"tag" form:"tag" gorm:"unique"`
 	Sniffing       string   `json:"sniffing" form:"sniffing"`
+}
+
+func (i *Inbound) BeforeCreate(tx *gorm.DB) (err error) {
+	// UUID version 4
+	i.ID = uuid.NewV4()
+	return
 }
 
 type InboundConfig struct {
@@ -88,21 +90,47 @@ func (c *InboundConfig) Equals(other *InboundConfig) bool {
 	return true
 }
 
+type xrayClient struct {
+	AlterIds   int       `json:"AlterIds"`
+	Enable     bool      `json:"Enable"`
+	ID         uuid.UUID `gorm:"type:uuid;" json:"id" gorm:"primaryKey"`
+	Email      string    `json:"Email"`
+	LimitIP    int       `json:"LimitIP"`
+	Security   string    `json:"Security"`
+	TotalGB    int       `json:"TotalGB"`
+	ExpiryTime int64     `json:"ExpiryTime"`
+}
+
 func (i *Inbound) GenXrayInboundConfig() *InboundConfig {
 	listen := i.Listen
+
+	var smallClient []xrayClient
 	if listen != "" {
 		listen = fmt.Sprintf("\"%v\"", listen)
 	}
-	cl, err := json.Marshal(i.Clients)
+	junkClient, err := json.Marshal(i.Clients)
+	if err != nil {
+		return nil
+	}
+	err = json.Unmarshal(junkClient, &smallClient)
+	if err != nil {
+		return nil
+	}
+	settings := map[string]interface{}{}
+	err = json.Unmarshal([]byte(i.Settings), &settings)
+	if err != nil {
+		return nil
+	}
+	settings["clients"] = smallClient
+	modifiedSettings, err := json.Marshal(settings)
 	if err != nil {
 		return nil
 	}
 	return &InboundConfig{
-		Listen:   json_util.RawMessage(listen),
-		Port:     i.Port,
-		Protocol: string(i.Protocol),
-		//Settings:       json_util.RawMessage(i.Clients),
-		Settings:       cl,
+		Listen:         json_util.RawMessage(listen),
+		Port:           i.Port,
+		Protocol:       string(i.Protocol),
+		Settings:       modifiedSettings,
 		StreamSettings: json_util.RawMessage(i.StreamSettings),
 		Tag:            i.Tag,
 		Sniffing:       json_util.RawMessage(i.Sniffing),
@@ -115,28 +143,34 @@ type Setting struct {
 	Value string `json:"value" form:"value"`
 }
 type Client struct {
-	ID         int64      `gorm:"autoIncrement" json:"id" gorm:"primaryKey"`
-	Creator    int        `json:"-"`
-	AlterIds   uint16     `json:"alterId"`
-	Enable     bool       `json:"enable" form:"enable"`
-	Email      string     `json:"email"`
-	LimitIP    int        `json:"limitIp"`
-	Security   string     `json:"security"`
-	TotalGB    int64      `json:"totalGB" form:"totalGB"`
-	TotalUp    int64      `json:"TotalUp" form:"TotalUp"`
-	TotalDown  int64      `json:"TotalDown" form:"TotalDown"`
-	ExpiryTime int64      `json:"expiryTime" form:"expiryTime"`
-	Inbounds   []*Inbound `gorm:"many2many:inbound_clients;"`
+	ID         uuid.UUID `gorm:"type:uuid;" json:"id" gorm:"primaryKey"`
+	InboundID  uuid.UUID `gorm:"type:uuid;" json:"inbound_id"`
+	Inbound    Inbound   `json:"-"`
+	Creator    int       `json:"-"`
+	AlterIds   uint16    `json:"alterId"`
+	Enable     bool      `json:"enable" form:"enable"`
+	LimitIP    int       `json:"limitIp" form:"limitIp"`
+	Email      string    `json:"email" form:"email"`
+	Security   string    `json:"security" form:"security"`
+	TotalGB    int64     `json:"totalGB" form:"totalGB"`
+	TotalUp    int64     `json:"totalUp" form:"totalUp"`
+	TotalDown  int64     `json:"totalDown" form:"totalDown"`
+	ExpiryTime int64     `json:"expiryTime" form:"expiryTime"`
 }
 
-type InboundClients struct {
-	ID        uint64 `gorm:"primaryKey"`
-	ClientID  int
-	InboundID int
-	TotalUp   int
-	TotalDown int
+func (c *Client) BeforeCreate(tx *gorm.DB) (err error) {
+	// UUID version 4
+	c.ID = uuid.NewV4()
+	c.Email = fmt.Sprintf("%s@%s", c.ID, c.InboundID)
+	return
+}
+
+type Traffic struct {
+	ID        uuid.UUID `gorm:"type:uuid;" json:"id" gorm:"primaryKey"`
+	ClientsID uuid.UUID `json:"inboundClientID" form:"inboundClientID"`
+	Up        int64     `json:"up" form:"up"`
+	Down      int64     `json:"down" form:"down"`
 	CreatedAt time.Time
-	UpdateAt  time.Time
 }
 
 type InboundClientIps struct {

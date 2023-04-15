@@ -68,14 +68,12 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 
 	s.inboundService.DisableInvalidClients()
 
-	inbounds, err := s.inboundService.GetAllInbounds()
+	inbounds, err := s.inboundService.GetAllEnabledInbounds()
 	if err != nil {
 		return nil, err
 	}
 	for _, inbound := range inbounds {
-		if !inbound.Enable {
-			continue
-		}
+
 		// get settings clients
 		//settings := map[string]interface{}{}
 		//json.Unmarshal([]byte(inbound.Settings), &settings)
@@ -83,30 +81,30 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 		//if ok {
 		// check users active or not
 
-		clientStats := inbound.Clients
-		for _, clientTraffic := range clientStats {
+		//clientStats := inbound.Clients
+		//for _, clientTraffic := range clientStats {
 
-			for _, client := range inbound.Clients {
-				if client.Email == clientTraffic.Email {
-					if !clientTraffic.Enable {
-						//@todo : remove clients
-						//clients = RemoveIndex(clients, index)
-						logger.Info("Remove Inbound User", client.Email, "due the expire or traffic limit")
+		//for _, client := range inbound.Clients {
+		//if client.Email == clientTraffic.Email {
+		//	if !clientTraffic.Enable {
+		//		//@todo : remove clients
+		//		//clients = RemoveIndex(clients, index)
+		//		logger.Info("Remove Inbound User", client.Email, "due the expire or traffic limit")
+		//
+		//	}
 
-					}
+		//}
+		//}
 
-				}
-			}
+		//}
+		//settings["clients"] = clients
+		//modifiedSettings, err := json.Marshal(settings)
+		//if err != nil {
+		//	return nil, err
+		//}
 
-			//}
-			//settings["clients"] = clients
-			//modifiedSettings, err := json.Marshal(settings)
-			//if err != nil {
-			//	return nil, err
-			//}
-
-			//inbound.Settings = string(modifiedSettings)
-		}
+		//inbound.Settings = string(modifiedSettings)
+		//}
 		inboundConfig := inbound.GenXrayInboundConfig()
 		xrayConfig.InboundConfigs = append(xrayConfig.InboundConfigs, *inboundConfig)
 	}

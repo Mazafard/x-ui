@@ -607,7 +607,7 @@ class Client extends XrayCommonClass {
         email = "",
         limitIp = 0,
         security = "",
-        inbound = {},
+        Inbound = {},
         expiryTime = 0,
         id = "",
         totalGB = 0,
@@ -618,7 +618,7 @@ class Client extends XrayCommonClass {
         this.email = email;
         this.limitIp = limitIp;
         this.security = security;
-        this.inbound= inbound;
+        this.Inbound= Inbound;
         this.expiryTime= expiryTime;
         this.id= id;
         this.totalGB= totalGB;
@@ -973,7 +973,7 @@ class Client extends XrayCommonClass {
     }
 
     genLink(address = '', remark = '', clientIndex = 0) {
-        switch (this.protocol) {
+        switch (this.Inbound.protocol) {
             case Protocols.VMESS:
                 return this.genVmessLink(address, remark, clientIndex);
             case Protocols.VLESS:

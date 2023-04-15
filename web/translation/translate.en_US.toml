@@ -86,6 +86,7 @@
 
 [pages.clients]
 "title" = "Clients"
+"qrCode" = "qrCode"
 "totalDownUp" = "total Down Up"
 "clientUsage" = "client Usage"
 "clientCount" = "client Count"

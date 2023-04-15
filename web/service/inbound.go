@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"time"
 	"x-ui/database"
@@ -35,14 +36,29 @@ func (s *InboundService) GetAllInbounds() ([]*model.Inbound, error) {
 	return inbounds, nil
 }
 
-func (s *InboundService) checkPortExist(port int, ignoreId int) (bool, error) {
+func (s *InboundService) GetAllEnabledInbounds() ([]*model.Inbound, error) {
+	db := database.GetDB()
+	var inbounds []*model.Inbound
+	err := db.Model(model.Inbound{}).Preload("Clients").Find(&inbounds).Where("Enable = ?", true).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+	return inbounds, nil
+}
+
+func (s *InboundService) checkPortExist(port int, ignoreId uuid.UUID) (bool, error) {
+	var err error
 	db := database.GetDB()
 	db = db.Model(model.Inbound{}).Where("port = ?", port)
-	if ignoreId > 0 {
+	if ignoreId != uuid.Nil {
+		uuid.Must(ignoreId, err)
+		if err != nil {
+			return false, err
+		}
 		db = db.Where("id != ?", ignoreId)
 	}
 	var count int64
-	err := db.Count(&count).Error
+	err = db.Count(&count).Error
 	if err != nil {
 		return false, err
 	}
@@ -63,52 +79,53 @@ func (s *InboundService) getClients(inbound *model.Inbound) ([]model.Client, err
 	return clients, nil
 }
 
-func (s *InboundService) checkEmailsExist(emails map[string]bool, ignoreId int) (string, error) {
-	db := database.GetDB()
-	var inbounds []*model.Inbound
-	db = db.Model(model.Inbound{}).Where("Protocol in ?", []model.Protocol{model.VMess, model.VLESS})
-	if ignoreId > 0 {
-		db = db.Where("id != ?", ignoreId)
-	}
-	db = db.Find(&inbounds)
-	if db.Error != nil {
-		return "", db.Error
-	}
-
-	for _, inbound := range inbounds {
-		clients, err := s.getClients(inbound)
-		if err != nil {
-			return "", err
-		}
-
-		for _, client := range clients {
-			if emails[client.Email] {
-				return client.Email, nil
-			}
-		}
-	}
-	return "", nil
-}
-
-func (s *InboundService) checkEmailExistForInbound(inbound *model.Inbound) (string, error) {
-	clients, err := s.getClients(inbound)
-	if err != nil {
-		return "", err
-	}
-	emails := make(map[string]bool)
-	for _, client := range clients {
-		if client.Email != "" {
-			if emails[client.Email] {
-				return client.Email, nil
-			}
-			emails[client.Email] = true
-		}
-	}
-	return s.checkEmailsExist(emails, inbound.Id)
-}
+//
+//func (s *InboundService) checkEmailsExist(emails map[string]bool, ignoreId uuid.UUID) (string, error) {
+//	db := database.GetDB()
+//	var inbounds []*model.Inbound
+//	db = db.Model(model.Inbound{}).Preload("Clients").Where("Protocol in ?", []model.Protocol{model.VMess, model.VLESS})
+//	//if ignoreId > 0 {
+//	db = db.Where("id != ?", ignoreId)
+//	//}
+//	db = db.Find(&inbounds)
+//	if db.Error != nil {
+//		return "", db.Error
+//	}
+//
+//	for _, inbound := range inbounds {
+//		clients, err := s.getClients(inbound)
+//		if err != nil {
+//			return "", err
+//		}
+//
+//		for _, client := range clients {
+//			if emails[client.Email] {
+//				return client.Email, nil
+//			}
+//		}
+//	}
+//	return "", nil
+//}
+//
+//func (s *InboundService) checkEmailExistForInbound(inbound *model.Inbound) (string, error) {
+//	clients, err := s.getClients(inbound)
+//	if err != nil {
+//		return "", err
+//	}
+//	emails := make(map[string]bool)
+//	for _, client := range clients {
+//		if client.Email != "" {
+//			if emails[client.Email] {
+//				return client.Email, nil
+//			}
+//			emails[client.Email] = true
+//		}
+//	}
+//	return s.checkEmailsExist(emails, inbound.ID)
+//}
 
 func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, error) {
-	exist, err := s.checkPortExist(inbound.Port, 0)
+	exist, err := s.checkPortExist(inbound.Port, uuid.Nil)
 	if err != nil {
 		return inbound, err
 	}
@@ -118,15 +135,15 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, err
 	db := database.GetDB()
 
 	err = db.Save(inbound).Error
-	if err == nil {
-		s.UpdateClientStat(inbound.Id, inbound.Settings)
-	}
+	//if err == nil {
+	//	s.UpdateClientStat(inbound.ID, inbound.Settings)
+	//}
 	return inbound, err
 }
 
 func (s *InboundService) AddInbounds(inbounds []*model.Inbound) error {
 	for _, inbound := range inbounds {
-		exist, err := s.checkPortExist(inbound.Port, 0)
+		exist, err := s.checkPortExist(inbound.Port, uuid.Nil)
 		if err != nil {
 			return err
 		}
@@ -156,22 +173,32 @@ func (s *InboundService) AddInbounds(inbounds []*model.Inbound) error {
 	return nil
 }
 
-func (s *InboundService) DelInbound(id int) error {
+func (s *InboundService) DelInbound(id uuid.UUID) error {
 	db := database.GetDB()
 	return db.Delete(model.Inbound{}, id).Error
 }
 
-func (s *InboundService) GetInbound(id int) (*model.Inbound, error) {
+func (s *InboundService) GetInbound(id uuid.UUID) (*model.Inbound, error) {
 	db := database.GetDB()
 	inbound := &model.Inbound{}
-	err := db.Model(model.Inbound{}).First(inbound, id).Error
+	err := db.Debug().Model(model.Inbound{}).First(inbound, "id=?", id).Error
 	if err != nil {
 		return nil, err
 	}
 	return inbound, nil
 }
 
-func (s *InboundService) GetInboundsId(ids []int) (inbounds []*model.Inbound, err error) {
+func (s *InboundService) GetInboundClients(id uuid.UUID) (*[]model.Client, error) {
+	db := database.GetDB()
+	clients := &[]model.Client{}
+	err := db.Debug().Model(model.Client{}).Where("Inbound_id=?", id).Find(clients).Error
+	if err != nil {
+		return nil, err
+	}
+	return clients, nil
+}
+
+func (s *InboundService) GetInboundsId(ids []uuid.UUID) (inbounds []*model.Inbound, err error) {
 	db := database.GetDB()
 
 	//if err := db.Model(model.Inbound{}).Where("id IN (?)", ids).Find(&inbounds).Error; err != nil {
@@ -183,7 +210,7 @@ func (s *InboundService) GetInboundsId(ids []int) (inbounds []*model.Inbound, er
 }
 
 func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, error) {
-	exist, err := s.checkPortExist(inbound.Port, inbound.Id)
+	exist, err := s.checkPortExist(inbound.Port, inbound.ID)
 	if err != nil {
 		return inbound, err
 	}
@@ -191,7 +218,7 @@ func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, 
 		return inbound, common.NewError("port already exists:", inbound.Port)
 	}
 
-	oldInbound, err := s.GetInbound(inbound.Id)
+	oldInbound, err := s.GetInbound(inbound.ID)
 	if err != nil {
 		return inbound, err
 	}
@@ -209,7 +236,7 @@ func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, 
 	oldInbound.Sniffing = inbound.Sniffing
 	oldInbound.Tag = fmt.Sprintf("inbound-%v", inbound.Port)
 
-	s.UpdateClientStat(inbound.Id, inbound.Settings)
+	//s.UpdateClientStat(inbound.ID, inbound.Settings)
 	db := database.GetDB()
 	return inbound, db.Save(oldInbound).Error
 }
@@ -271,7 +298,7 @@ func (s *InboundService) AddClientTraffic(traffics []*xray.ClientTraffic) (err e
 
 		err := txInbound.Preload("Clients", "Email = ?", "%"+traffic.Email+"%").First(inbound).Error
 		//err := txInbound.Where("settings like ?", "%"+traffic.Email+"%").First(inbound).Error
-		traffic.InboundId = inbound.Id
+		traffic.InboundId = inbound.ID
 		if err != nil {
 			if err == gorm.ErrRecordNotFound {
 				// delete removed client record
@@ -291,7 +318,7 @@ func (s *InboundService) AddClientTraffic(traffics []*xray.ClientTraffic) (err e
 		//		traffic.Total = client.TotalGB
 		//	}
 		//}
-		if tx.Where("inbound_id = ?", inbound.Id).Where("email = ?", traffic.Email).
+		if tx.Where("inbound_id = ?", inbound.ID).Where("email = ?", traffic.Email).
 			UpdateColumn("enable", true).
 			UpdateColumn("expiry_time", traffic.ExpiryTime).
 			UpdateColumn("total", traffic.Total).
@@ -322,42 +349,46 @@ func (s *InboundService) DisableInvalidInbounds() (int64, error) {
 func (s *InboundService) DisableInvalidClients() (int64, error) {
 	db := database.GetDB()
 	now := time.Now().Unix() * 1000
-	result := db.Debug().Model(model.Client{}).Where("Enable = ?", true).Preload("Inbounds", "Total_up > 0 ").
+	result := db.Debug().Model(model.Client{}).Where("Enable = ?", true).Preload("Inbound", "Total_up > 0 ").
 		Where("((total_up > 0 and total_up + total_down >= total_gb) or (expiry_time > 0 and expiry_time <= ?))", now).
 		Update("enable", false)
 	err := result.Error
 	count := result.RowsAffected
 	return count, err
 }
-func (s *InboundService) UpdateClientStat(inboundId int, inboundSettings string) error {
-	db := database.GetDB()
 
-	// get settings clients
-	settings := map[string][]model.Client{}
-	json.Unmarshal([]byte(inboundSettings), &settings)
-	clients := settings["clients"]
-	for _, client := range clients {
-		result := db.Model(xray.ClientTraffic{}).
-			Where("inbound_id = ? and email = ?", inboundId, client.Email).
-			Updates(map[string]interface{}{"enable": true, "total": client.TotalGB, "expiry_time": client.ExpiryTime})
-		if result.RowsAffected == 0 {
-			clientTraffic := xray.ClientTraffic{}
-			clientTraffic.InboundId = inboundId
-			clientTraffic.Email = client.Email
-			clientTraffic.ExpiryTime = client.ExpiryTime
-			clientTraffic.Enable = true
-			clientTraffic.Up = 0
-			clientTraffic.Down = 0
-			db.Create(&clientTraffic)
-		}
-		err := result.Error
-		if err != nil {
-			return err
-		}
+//func (s *InboundService) UpdateClientStat(inboundId uuid.UUID, inboundSettings string) error {
+//	db := database.GetDB()
+//
+//	// get settings clients
+//	settings := map[string][]model.Client{}
+//	json.Unmarshal([]byte(inboundSettings), &settings)
+//	//var clients []model.Client
+//	//db.Model(model.Client{}).Preload("Inbounds").Preload("Traffics").Update()
+//	clients := settings["clients"]
+//	for _, client := range clients {
+//		result := db.Model(xray.ClientTraffic{}).
+//			Where("inbound_id = ? and email = ?", inboundId, client.InboundClients).
+//			Updates(map[string]interface{}{"enable": true, "total": client.TotalGB, "expiry_time": client.ExpiryTime})
+//		if result.RowsAffected == 0 {
+//			clientTraffic := xray.ClientTraffic{}
+//			clientTraffic.InboundId = inboundId
+//			clientTraffic.Email = client.Email
+//			clientTraffic.ExpiryTime = client.ExpiryTime
+//			clientTraffic.Enable = true
+//			clientTraffic.Up = 0
+//			clientTraffic.Down = 0
+//			db.Create(&clientTraffic)
+//		}
+//		err := result.Error
+//		if err != nil {
+//			return err
+//		}
+//
+//	}
+//	return nil
+//}
 
-	}
-	return nil
-}
 func (s *InboundService) DelClientStat(tx *gorm.DB, email string) error {
 	return tx.Where("email = ?", email).Delete(xray.ClientTraffic{}).Error
 }
@@ -399,33 +430,34 @@ func (s *InboundService) ResetClientTraffic(clientEmail string) error {
 	}
 	return nil
 }
-func (s *InboundService) GetClientTrafficById(id int64) (traffic *xray.ClientTraffic, err error) {
-	db := database.GetDB()
-	inbound := &model.Inbound{}
-	traffic = &xray.ClientTraffic{}
 
-	err = db.Model(model.Inbound{}).Where("settings like ?", id).First(inbound).Error
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			logger.Warning(err)
-			return nil, err
-		}
-	}
-	traffic.InboundId = inbound.Id
-
-	// get settings clients
-	settings := map[string][]model.Client{}
-	json.Unmarshal([]byte(inbound.Settings), &settings)
-	clients := settings["clients"]
-	for _, client := range clients {
-		if id == client.ID {
-			traffic.Email = client.Email
-		}
-	}
-	err = db.Model(xray.ClientTraffic{}).Where("email = ?", traffic.Email).First(traffic).Error
-	if err != nil {
-		logger.Warning(err)
-		return nil, err
-	}
-	return traffic, err
-}
+//func (s *InboundService) GetClientTrafficById(id uuid.UUID) (traffic *xray.ClientTraffic, err error) {
+//	db := database.GetDB()
+//	inbound := &model.Inbound{}
+//	traffic = &xray.ClientTraffic{}
+//
+//	err = db.Model(model.Inbound{}).Where("settings like ?", id).First(inbound).Error
+//	if err != nil {
+//		if err == gorm.ErrRecordNotFound {
+//			logger.Warning(err)
+//			return nil, err
+//		}
+//	}
+//	traffic.InboundId = inbound.ID
+//
+//	// get settings clients
+//	settings := map[string][]model.Client{}
+//	json.Unmarshal([]byte(inbound.Settings), &settings)
+//	clients := settings["clients"]
+//	for _, client := range clients {
+//		if id == client.ID {
+//			traffic.Email = client.Email
+//		}
+//	}
+//	err = db.Model(xray.ClientTraffic{}).Where("email = ?", traffic.Email).First(traffic).Error
+//	if err != nil {
+//		logger.Warning(err)
+//		return nil, err
+//	}
+//	return traffic, err
+//}

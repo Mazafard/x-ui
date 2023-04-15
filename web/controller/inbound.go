@@ -3,7 +3,7 @@ package controller
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"strconv"
+	uuid "github.com/satori/go.uuid"
 	"x-ui/database/model"
 	"x-ui/logger"
 	"x-ui/web/global"
@@ -24,7 +24,7 @@ func NewInboundController(g *gin.RouterGroup) *InboundController {
 }
 
 func (a *InboundController) initRouter(g *gin.RouterGroup) {
-	g = g.Group("/inbound")
+	g = g.Group("/inbounds")
 
 	g.GET("/", a.getInbounds)
 	g.POST("/", a.addInbound)
@@ -60,7 +60,7 @@ func (a *InboundController) getInbounds(c *gin.Context) {
 	jsonObj(c, inbounds, nil)
 }
 func (a *InboundController) getInbound(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
+	id, err := uuid.FromString(c.Param("id"))
 	if err != nil {
 		jsonMsg(c, I18n(c, "get"), err)
 		return
@@ -71,6 +71,20 @@ func (a *InboundController) getInbound(c *gin.Context) {
 		return
 	}
 	jsonObj(c, inbound, nil)
+}
+
+func (a *InboundController) getInboundWithClients(c *gin.Context) {
+	id, err := uuid.FromString(c.Param("id"))
+	if err != nil {
+		jsonMsg(c, I18n(c, "get"), err)
+		return
+	}
+	clients, err := a.inboundService.GetInboundClients(id)
+	if err != nil {
+		jsonMsg(c, I18n(c, "pages.inbounds.toasts.obtain"), err)
+		return
+	}
+	jsonObj(c, clients, nil)
 }
 
 func (a *InboundController) addInbound(c *gin.Context) {
@@ -92,7 +106,7 @@ func (a *InboundController) addInbound(c *gin.Context) {
 }
 
 func (a *InboundController) delInbound(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
+	id, err := uuid.FromString(c.Param("id"))
 	if err != nil {
 		jsonMsg(c, I18n(c, "delete"), err)
 		return
@@ -105,13 +119,13 @@ func (a *InboundController) delInbound(c *gin.Context) {
 }
 
 func (a *InboundController) updateInbound(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
+	id, err := uuid.FromString(c.Param("id"))
 	if err != nil {
 		jsonMsg(c, I18n(c, "pages.inbounds.revise"), err)
 		return
 	}
 	inbound := &model.Inbound{
-		Id: id,
+		ID: id,
 	}
 	err = c.ShouldBind(inbound)
 	if err != nil {

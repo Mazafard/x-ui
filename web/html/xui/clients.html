@@ -54,13 +54,14 @@
                                  :pagination="true"
                                  style="margin-top: 20px"
                                  @change="() => getDBClients()">
+
                             <template slot="action" slot-scope="text, dbClient">
                                 <a-dropdown :trigger="['click']">
                                     <a @click="e => e.preventDefault()">{{ i18n "pages.clients.operate" }}</a>
                                     <a-menu slot="overlay" @click="a => clickAction(a, dbClient)">
                                         <a-menu-item v-if="dbClient.hasLink()" key="qrcode">
                                             <a-icon type="qrcode"></a-icon>
-                                            {{ i18n "qrCode" }}
+                                            {{ i18n "pages.clients.qrCode" }}
                                         </a-menu-item>
                                         <a-menu-item key="edit">
                                             <a-icon type="edit"></a-icon>
@@ -77,7 +78,9 @@
                                     </a-menu>
                                 </a-dropdown>
                             </template>
-
+                            <template slot="enable" slot-scope="text, dbClient">
+                                <a-switch v-model="dbClient.enable" @change="switchEnable(dbClient)"></a-switch>
+                            </template>
                             <template slot="enable" slot-scope="text, dbClient">
                                 <a-switch v-model="dbClient.enable" @change="switchEnable(dbClient)"></a-switch>
                             </template>
@@ -103,7 +106,12 @@
 {{template "js" .}}
 <script>
 
-    const columns = [ {
+    const columns = [{
+        title: '{{ i18n "pages.clients.operate" }}',
+        align: 'center',
+        width: 30,
+        scopedSlots: { customRender: 'action' },
+    }, {
         title: '{{ i18n "pages.clients.enable" }}',
         align: 'center',
         width: 40,
@@ -169,6 +177,7 @@
                 this.dbClients.splice(0);
                 console.log("+++++++++++++++++")
                 console.log(dbClients)
+                console.log("+++++++++++++++++")
                 for (const client of dbClients) {
                     const dbClient = new DBClient(client);
                     this.clients.push(dbClient.toClient());
@@ -292,12 +301,17 @@
                     onOk: () => this.submit('/xui/client/del/' + dbClient.id),
                 });
             },
+            showQrcode(dbClient) {
+                const link = dbClient.genLink();
+                qrModal.show('{{ i18n "qrCode"}}', link, dbClient);
+            },
 
             showInfo(dbClient) {
                 infoModal.show(dbClient);
             },
             switchEnable(dbClient) {
-                this.submitPatch(`/xui/client/${dbClient.id}`, dbClient);
+                status_enable = {"status": dbClient.enable}
+                this.submitPatch(`/xui/client/${dbClient.id}`, status_enable);
             },
             async submit(url, data, modal) {
                 const msg = await HttpUtil.postWithModal(url, data, modal);
@@ -312,7 +326,7 @@
                 }
             },
             async submitPatch(url, data, modal) {
-                const msg = await HttpUtil.putWithModal(url, data, modal);
+                const msg = await HttpUtil.patchWithModal(url, data, modal);
                 if (msg.success) {
                     await this.getDBClients();
                 }
@@ -343,9 +357,9 @@
 
 </script>
 {{template "clientModal"}}
-<!--{{template "promptModal"}}-->
-<!--{{template "qrcodeModal"}}-->
+{{template "promptModal"}}
+{{template "qrcodeModal"}}
 {{template "textModal"}}
-<!--{{template "clientInfoModal"}}-->
+{{template "clientInfoModal"}}
 </body>
 </html>
